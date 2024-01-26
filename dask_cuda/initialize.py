@@ -2,7 +2,10 @@ import logging
 import os
 
 import click
-import numba.cuda
+if HIP_USE_ROCM:
+    from hip import hip as hiprt
+else:
+    import numba.cuda
 
 import dask
 from distributed.diagnostics.nvml import get_device_index_and_uuid, has_cuda_context
@@ -13,13 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 def _create_cuda_context_handler():
-    if int(os.environ.get("DASK_CUDA_TEST_SINGLE_GPU", "0")) != 0:
-        try:
-            numba.cuda.current_context()
-        except numba.cuda.cudadrv.error.CudaSupportError:
-            pass
+    if HIP_USE_ROCM:
+        hiprt.hipCtxGetCurrent()
     else:
-        numba.cuda.current_context()
+        if int(os.environ.get("DASK_CUDA_TEST_SINGLE_GPU", "0")) != 0:
+            try:
+                numba.cuda.current_context()
+            except numba.cuda.cudadrv.error.CudaSupportError:
+                pass
+        else:
+            numba.cuda.current_context()
 
 
 def _create_cuda_context(protocol="ucx"):

@@ -10,7 +10,10 @@ from multiprocessing import cpu_count
 from typing import Optional
 
 import numpy as np
-import pynvml
+if HIP_USE_ROCM:
+    import pyamdsmi as pynvml
+else:
+    import pynvml
 import toolz
 
 import dask
