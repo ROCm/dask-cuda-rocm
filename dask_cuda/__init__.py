@@ -9,6 +9,7 @@ import dask.dataframe.core
 import dask.dataframe.shuffle
 import dask.dataframe.multi
 import dask.bag.core
+from distributed.utils import HIP_USE_ROCM
 
 from ._version import __git_commit__, __version__
 from .cuda_worker import CUDAWorker
