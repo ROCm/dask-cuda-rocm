@@ -2,7 +2,7 @@ import logging
 import os
 
 import click
-if HIP_USE_ROCM:
+if DASK_USE_ROCM:
     from hip import hip as hiprt
 else:
     import numba.cuda
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _create_cuda_context_handler():
-    if HIP_USE_ROCM:
+    if DASK_USE_ROCM:
         hiprt.hipCtxGetCurrent()
     else:
         if int(os.environ.get("DASK_CUDA_TEST_SINGLE_GPU", "0")) != 0:

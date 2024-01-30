@@ -10,7 +10,11 @@ import dask.dataframe.core
 import dask.dataframe.shuffle
 import dask.dataframe.multi
 import dask.bag.core
-from distributed.utils import HIP_USE_ROCM
+try:
+    from distributed.utils import DASK_USE_ROCM
+except ImportError:
+    print("ROCM not found in distributed, setting DASK_USE_ROCM=False")
+    DASK_USE_ROCM = False
 
 from ._version import __git_commit__, __version__
 from .cuda_worker import CUDAWorker
