@@ -7,6 +7,7 @@ from functools import partial
 import dask
 from distributed import LocalCluster, Nanny, Worker
 from distributed.worker_memory import parse_memory_limit
+from distributed.utils import DASK_USE_ROCM
 
 from .device_host_file import DeviceHostFile
 from .initialize import initialize
@@ -399,7 +400,7 @@ class LocalCUDACluster(LocalCluster):
                 "plugins": {
                     CPUAffinity(
                         get_cpu_affinity(nvml_device_index(0, visible_devices))
-                    ),
+                    ) if not DASK_USE_ROCM else None,
                     RMMSetup(
                         initial_pool_size=self.rmm_pool_size,
                         maximum_pool_size=self.rmm_maximum_pool_size,
