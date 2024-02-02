@@ -198,6 +198,9 @@ def get_cpu_affinity(device_index=None):
             % device_index
         )
         return list(range(get_cpu_count()))
+    except pynvml.NVMLError_NotSupported:
+        warnings.warn("Setting default affinity, as the function is not supported.")
+        return list(range(get_cpu_count()))
 
 
 def get_n_gpus():
