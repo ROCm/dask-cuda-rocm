@@ -108,7 +108,7 @@ combine_as_imports = true
 order_by_type = true
 known_dask = [
     "dask",
-    "distributed",
+    "distributed @ git+ssh://git@github.com/ROCm/distributed/tree/dev-rocm",
 ]
 known_rapids = [
     "rmm",
