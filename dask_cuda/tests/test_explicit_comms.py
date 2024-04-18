@@ -4,9 +4,6 @@ import os
 import signal
 import time
 from functools import partial
-import signal
-import time
-from functools import partial
 from unittest.mock import patch
 
 import numpy as np
