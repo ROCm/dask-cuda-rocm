@@ -1,3 +1,39 @@
+# Apache License
+#
+# Copyright 2019 NVIDIA Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modification Copyright (c) 2024 Advanced Micro Devices, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import sys
 
 if sys.platform != "linux":
@@ -9,6 +45,33 @@ import dask.dataframe.core
 import dask.dataframe.shuffle
 import dask.dataframe.multi
 import dask.bag.core
+import os
+
+
+def is_rocm_available():
+    """Utility method to check if AMD GPU is available"""
+    import subprocess
+    import re
+
+    check_cmd ='rocminfo'
+    try:
+        proc_complete = subprocess.run(
+            check_cmd.split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        )
+        for line in proc_complete.stdout.decode('utf-8').split():
+            if re.search(r"(gfx908|gfx90a|gfx940|gfx941|gfx942|gfx1100)", line):
+                return True
+        return False
+    except (FileNotFoundError, subprocess.CalledProcessError) as err:
+        print('  Error => ', str(err))
+        return False
+
+
+DASK_USE_ROCM = is_rocm_available()
+print("ROCM device found") if DASK_USE_ROCM else print("ROCM device not found")
 
 from ._version import __git_commit__, __version__
 from .cuda_worker import CUDAWorker

@@ -1,8 +1,48 @@
+# Apache License
+#
+# Copyright 2019 NVIDIA Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modification Copyright (c) 2024 Advanced Micro Devices, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import logging
 import os
 
 import click
-import numba.cuda
+from dask_cuda import DASK_USE_ROCM
+if DASK_USE_ROCM:
+    from hip import hip as hiprt
+else:
+    import numba.cuda
 
 import dask
 from distributed.diagnostics.nvml import get_device_index_and_uuid, has_cuda_context
@@ -13,13 +53,16 @@ logger = logging.getLogger(__name__)
 
 
 def _create_cuda_context_handler():
-    if int(os.environ.get("DASK_CUDA_TEST_SINGLE_GPU", "0")) != 0:
-        try:
-            numba.cuda.current_context()
-        except numba.cuda.cudadrv.error.CudaSupportError:
-            pass
+    if DASK_USE_ROCM:
+        hiprt.hipCtxGetCurrent()
     else:
-        numba.cuda.current_context()
+        if int(os.environ.get("DASK_CUDA_TEST_SINGLE_GPU", "0")) != 0:
+            try:
+                numba.cuda.current_context()
+            except numba.cuda.cudadrv.error.CudaSupportError:
+                pass
+        else:
+            numba.cuda.current_context()
 
 
 def _create_cuda_context(protocol="ucx"):
