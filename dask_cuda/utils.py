@@ -32,11 +32,7 @@ from multiprocessing import cpu_count
 from typing import Optional
 
 import numpy as np
-from dask_cuda import DASK_USE_ROCM
-if DASK_USE_ROCM:
-    from pyrsmi import rocml as pynvml
-else:
-    import pynvml
+import pynvml
 import toolz
 
 import dask
@@ -221,7 +217,8 @@ def get_device_total_memory(index=0):
         handle = pynvml.nvmlDeviceGetHandleByUUID(str.encode(str(index)))
     else:
         # This is a device index
-        handle = pynvml.nvmlDeviceGetHandleByIndex(index)
+        # handle = pynvml.nvmlDeviceGetHandleByIndex(index)
+        return pynvml.smi_get_device_memory_total(index)
     return pynvml.nvmlDeviceGetMemoryInfo(handle).total
 
 

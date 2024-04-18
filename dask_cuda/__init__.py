@@ -33,6 +33,44 @@ import dask.dataframe.multi
 import dask.bag.core
 import os
 
+def __init_dask_cuda_rocm():
+    import sys
+    from pyrsmi import rocml
+    # set HIP_VISIBLE_DEVICES as CUDA_VISIBLE_DEVICES if the latter is not set
+    if "HIP_VISIBLE_DEVICES" in os.environ and not "CUDA_VISIBLE_DEVICES" in os.environ:
+        os.environ["CUDA_VISIBLE_DEVICES"]=os.environ["HIP_VISIBLE_DEVICES"]
+
+    # pynvml-to-rocml delegation module
+    class Pynvml:
+        NVMLError_NotSupported = pyrsmi.rocml.ROCMLError_NotSupported
+
+        class NVMLError(Exception):
+            def __new__(typ, value):
+                obj = Exception.__new__(str(value))
+                obj.value = value
+
+        nvmlDeviceGetCount = rocml.smi_get_device_count
+        # TODO: no equivalent found: nvmlDeviceGetCpuAffinity
+        # TODO: no equivalent found: nvmlDeviceGetDeviceHandleFromMigDeviceHandle
+        # TODO: no equivalent found: nvmlDeviceGetHandleByIndex
+        # TODO: no equivalent found: nvmlDeviceGetHandleByUUID
+        # TODO: no equivalent found: nvmlDeviceGetMaxMigDeviceCount
+        # TODO: no equivalent found: nvmlDeviceGetMemoryInfo
+        # TODO: no equivalent found: nvmlDeviceGetMigDeviceHandleByIndex
+        # TODO: no equivalent found: nvmlDeviceGetMigMode
+        # TODO: no equivalent found: nvmlDeviceGetUUID
+        nvmlInit = rocml.smi_initialize
+
+        def __getattribute__ (self, name: str):
+            '''"Automatically hipifies" `cuda<func>` attribute names.'''
+            nonlocal rocml
+            if hasattr(rocml,name):
+                return getattr(rocml,name)
+            return super().__getattribute__(name)
+    # overwrite
+    sys.modules["pynvml"] = Pynvml()
+
+__init_dask_cuda_rocm()
 
 def is_amd_gpu_available():
     """Utility method to check if AMD GPU is available"""
@@ -57,7 +95,7 @@ def is_amd_gpu_available():
 
 
 DASK_USE_ROCM = is_amd_gpu_available()
-print("ROCM device found") if DASK_USE_ROCM else print("ROCM device not found")
+# print("ROCM device found") if DASK_USE_ROCM else print("ROCM device not found")
 
 from ._version import __git_commit__, __version__
 from .cuda_worker import CUDAWorker
