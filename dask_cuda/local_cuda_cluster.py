@@ -29,7 +29,7 @@ from functools import partial
 import dask
 from distributed import LocalCluster, Nanny, Worker
 from distributed.worker_memory import parse_memory_limit
-from distributed.utils import DASK_USE_ROCM
+from dask_cuda import DASK_USE_ROCM
 
 from .device_host_file import DeviceHostFile
 from .initialize import initialize

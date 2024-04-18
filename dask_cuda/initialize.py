@@ -24,7 +24,7 @@ import logging
 import os
 
 import click
-from distributed.utils import DASK_USE_ROCM
+from dask_cuda import DASK_USE_ROCM
 if DASK_USE_ROCM:
     from hip import hip as hiprt
 else:

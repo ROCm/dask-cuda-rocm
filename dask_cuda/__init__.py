@@ -31,11 +31,33 @@ import dask.dataframe.core
 import dask.dataframe.shuffle
 import dask.dataframe.multi
 import dask.bag.core
-try:
-    from distributed.utils import DASK_USE_ROCM
-except ImportError:
-    print("ROCM not found in distributed, setting DASK_USE_ROCM=False")
-    DASK_USE_ROCM = False
+import os
+
+
+def is_amd_gpu_available():
+    """Utility method to check if AMD GPU is available"""
+    import subprocess
+    import re
+
+    check_cmd ='rocminfo'
+    try:
+        proc_complete = subprocess.run(
+            check_cmd.split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        )
+        for line in proc_complete.stdout.decode('utf-8').split():
+            if re.search(r"(gfx908|gfx90a|gfx940|gfx941|gfx942|gfx1100)", line):
+                return True
+        return False
+    except (FileNotFoundError, subprocess.CalledProcessError) as err:
+        print('  Error => ', str(err))
+        return False
+
+
+DASK_USE_ROCM = is_amd_gpu_available()
+print("ROCM device found") if DASK_USE_ROCM else print("ROCM device not found")
 
 from ._version import __git_commit__, __version__
 from .cuda_worker import CUDAWorker

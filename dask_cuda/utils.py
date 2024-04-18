@@ -32,9 +32,9 @@ from multiprocessing import cpu_count
 from typing import Optional
 
 import numpy as np
-from distributed.utils import DASK_USE_ROCM
+from dask_cuda import DASK_USE_ROCM
 if DASK_USE_ROCM:
-    import pyamdsmi as pynvml
+    from pyrsmi import rocml as pynvml
 else:
     import pynvml
 import toolz
