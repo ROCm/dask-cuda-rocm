@@ -11,6 +11,7 @@ rapids-dependency-file-generator \
     --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" | tee env.yaml
 
 rapids-mamba-retry env create --yes -f env.yaml -n docs
+rapids-mamba-retry env create --yes -f env.yaml -n docs
 conda activate docs
 
 rapids-print-env
@@ -23,7 +24,7 @@ rapids-mamba-retry install \
     --channel "${PYTHON_CHANNEL}" \
     dask-cuda
 
-export RAPIDS_VERSION_NUMBER="24.04"
+export RAPIDS_VERSION_NUMBER="24.06"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build Python docs"
