@@ -1,6 +1,6 @@
-# Apache License
+# MIT License
 #
-# Copyright (c) 2023 Advanced Micro Devices, Inc.
+# Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -42,14 +42,17 @@ def __init_dask_cuda_rocm():
 
     # pynvml-to-rocml delegation module
     class Pynvml:
-        NVMLError_NotSupported = pyrsmi.rocml.ROCMLError_NotSupported
+        NVMLError_NotSupported = rocml.ROCMLError_NotSupported
 
         class NVMLError(Exception):
             def __new__(typ, value):
                 obj = Exception.__new__(str(value))
                 obj.value = value
 
-        nvmlDeviceGetCount = rocml.smi_get_device_count
+        def nvmlInit(self):
+            return rocml.smi_initialize()
+        def nvmlDeviceGetCount(self):
+            return rocml.smi_get_device_count()
         # TODO: no equivalent found: nvmlDeviceGetCpuAffinity
         # TODO: no equivalent found: nvmlDeviceGetDeviceHandleFromMigDeviceHandle
         # TODO: no equivalent found: nvmlDeviceGetHandleByIndex
@@ -59,15 +62,13 @@ def __init_dask_cuda_rocm():
         # TODO: no equivalent found: nvmlDeviceGetMigDeviceHandleByIndex
         # TODO: no equivalent found: nvmlDeviceGetMigMode
         # TODO: no equivalent found: nvmlDeviceGetUUID
-        nvmlInit = rocml.smi_initialize
 
-        def __getattribute__ (self, name: str):
-            '''"Automatically hipifies" `cuda<func>` attribute names.'''
-            nonlocal rocml
+        def __getattr__ (self, name: str):
+            '''"Automatically delegates ``nvml<Name>`` attribute names to `pyrsmi.rocml`'''
             if hasattr(rocml,name):
                 return getattr(rocml,name)
-            return super().__getattribute__(name)
-    # overwrite
+            return super().__getattr__(name)
+    # overwrite/set 'pynvml' entry in module registry:
     sys.modules["pynvml"] = Pynvml()
 
 __init_dask_cuda_rocm()
