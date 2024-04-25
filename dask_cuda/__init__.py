@@ -21,6 +21,8 @@
 # SOFTWARE.
 
 import sys
+import os
+from collections import namedtuple
 
 if sys.platform != "linux":
     raise ImportError("Only Linux is supported by Dask-CUDA at this time")
@@ -31,11 +33,11 @@ import dask.dataframe.core
 import dask.dataframe.shuffle
 import dask.dataframe.multi
 import dask.bag.core
-import os
 
 def __init_dask_cuda_rocm():
     import sys
     from pyrsmi import rocml
+    from hip import hip
     # set HIP_VISIBLE_DEVICES as CUDA_VISIBLE_DEVICES if the latter is not set
     if "HIP_VISIBLE_DEVICES" in os.environ and not "CUDA_VISIBLE_DEVICES" in os.environ:
         os.environ["CUDA_VISIBLE_DEVICES"]=os.environ["HIP_VISIBLE_DEVICES"]
@@ -43,6 +45,8 @@ def __init_dask_cuda_rocm():
     # pynvml-to-rocml delegation module
     class Pynvml:
         NVMLError_NotSupported = rocml.ROCMLError_NotSupported
+
+        PyrsmiMemInfo = namedtuple("PyrsmiMemInfo", "total free used")
 
         class NVMLError(Exception):
             def __new__(typ, value):
@@ -53,15 +57,34 @@ def __init_dask_cuda_rocm():
             return rocml.smi_initialize()
         def nvmlDeviceGetCount(self):
             return rocml.smi_get_device_count()
+        def nvmlDeviceGetHandleByIndex(self, dev):
+            """handle <-> dev"""
+            return dev
+        def nvmlDeviceGetMemoryInfo(self,handle):
+            used = rocml.smi_get_device_memory_used(dev=handle)
+            total = rocml.smi_get_device_memory_total(dev=handle)
+            free = total - used
+            return self.PyrsmiMemInfo(
+                total=total,
+                free=free,
+                used=used,
+            )
+        def nvmlDeviceGetHandleByIndex(self, dev):
+            """handle <-> dev"""
+            return dev
+        def nvmlDeviceGetUUID(self, dev):
+            return str(hip.hipDeviceGetUuid(dev)[1].bytes, encoding="utf-8")
+        def nvmlDeviceGetHandleByUUID(self, uuid: str):
+            for dev in range(self.nvmlDeviceGetCount()):
+                if self.nvmlDeviceGetUUID(dev) == uuid:
+                    return dev
+            raise ValueError("could not associate the given UUID with any device")
+
         # TODO: no equivalent found: nvmlDeviceGetCpuAffinity
         # TODO: no equivalent found: nvmlDeviceGetDeviceHandleFromMigDeviceHandle
-        # TODO: no equivalent found: nvmlDeviceGetHandleByIndex
-        # TODO: no equivalent found: nvmlDeviceGetHandleByUUID
         # TODO: no equivalent found: nvmlDeviceGetMaxMigDeviceCount
-        # TODO: no equivalent found: nvmlDeviceGetMemoryInfo
         # TODO: no equivalent found: nvmlDeviceGetMigDeviceHandleByIndex
         # TODO: no equivalent found: nvmlDeviceGetMigMode
-        # TODO: no equivalent found: nvmlDeviceGetUUID
 
         def __getattr__ (self, name: str):
             '''"Automatically delegates ``nvml<Name>`` attribute names to `pyrsmi.rocml`
@@ -69,6 +92,7 @@ def __init_dask_cuda_rocm():
                 __getattr__ is only called if the attribute is not found the usual way.
             '''
             return getattr(rocml,name)
+
     # overwrite/set 'pynvml' entry in module registry:
     sys.modules["pynvml"] = Pynvml()
 
