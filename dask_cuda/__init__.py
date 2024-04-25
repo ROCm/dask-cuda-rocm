@@ -64,10 +64,11 @@ def __init_dask_cuda_rocm():
         # TODO: no equivalent found: nvmlDeviceGetUUID
 
         def __getattr__ (self, name: str):
-            '''"Automatically delegates ``nvml<Name>`` attribute names to `pyrsmi.rocml`'''
-            if hasattr(rocml,name):
-                return getattr(rocml,name)
-            return super().__getattr__(name)
+            '''"Automatically delegates ``nvml<Name>`` attribute names to `pyrsmi.rocml`
+            Note:
+                __getattr__ is only called if the attribute is not found the usual way.
+            '''
+            return getattr(rocml,name)
     # overwrite/set 'pynvml' entry in module registry:
     sys.modules["pynvml"] = Pynvml()
 
